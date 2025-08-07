@@ -569,30 +569,27 @@ predict.binris <- function(object,
   if (het){
     SinvX        <- as.matrix(Sinv %*% X)
     SinvX_scaled <- SinvX * sigma_inv
-    der_beta     <- dfa * SinvX  
+    der_beta     <- dfa * SinvX_scaled  
   } else {
     SinvX        <- as.matrix(Sinv %*% X)
     der_beta     <- dfa * SinvX
   }
   
+  
   # Derivative w.r.t lambda
   if (het){
-    A           <- Matrix::Diagonal(n) - lambda * W
-    Sigma_u     <- Matrix::tcrossprod(Sinv)
-    AtW         <- Matrix::tcrossprod(A, W)
-    WtA         <- Matrix::crossprod(W, A)
-    M           <- WtA + AtW
+    BW        <- Sinv %*% W
+    BBt       <- Matrix::tcrossprod(Sinv)
+    diag_term <- 2 * Matrix::rowSums(BW * BBt)
+    Drho      <- - 0.5 * sigma_inv^3 * diag_term
+    term1     <- Drho * Sxb
     
-    sigma_inv3      <- sigma_inv^3
-    Sxb_scaled      <- Sxb * sigma_inv3
-    der_Sigmau_diag <- rowSums((Sigma_u %*% M) * Sigma_u)
-    term1           <- 0.5 * Sxb_scaled * der_Sigmau_diag
-    der_Sinv        <- Sinv %*% W %*% Sinv
-    term2           <- (Sinv %*% (der_Sinv %*% Xb)) * sigma_inv
+    term2           <- (Sinv %*% W %*% Sinv %*% Xb) * sigma_inv
     der_lambda      <- dfa * (term1 + term2)
   } else {
     der_lambda      <- dfa * drop(Sinv %*% W %*% Sinv %*% Xb)
   }
+  
   
   # Combine Jacobian
   Jac        <- cbind(der_beta, der_lambda)
