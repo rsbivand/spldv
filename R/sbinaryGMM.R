@@ -446,7 +446,8 @@ momB_slm <- function(start, y, X, H, listw, link, approximation, pw, tol.solve =
   sigma     <- sqrt(Matrix::rowSums(B^2))  # More efficient than  diag(tcrossprod(B))
   sigma_inv <- 1 / sigma
   BX        <- B %*% X
-  ai        <- as.vector(BX %*% beta) * sigma_inv
+  BXbeta    <- BX %*% beta
+  ai        <- as.vector(BXbeta) * sigma_inv
   
   # Choose link functions efficiently
   if (link == "probit") {
@@ -474,22 +475,21 @@ momB_slm <- function(start, y, X, H, listw, link, approximation, pw, tol.solve =
   der <- (ffa * Fa - fa^2) / (Fa^2)
   Gb  <- BX * der * sigma_inv 
   
-  # Approximate diag(Sigma_u %*% (W'A + A'W)  %*% Sigma_u)
   # NOTE: previous version of D_lambda incorrectly assumes that W is always symmetric
-  AtW <- Matrix::tcrossprod(A, W)
-  WtA <- Matrix::crossprod(W, A) # More efficient than t(W) %*% A
-  M   <- WtA + AtW   # correct for non-symmetric W
-  C   <- Matrix::crossprod(B, M%*%B)
+  part1  <- (B %*% (W %*% BXbeta)) * sigma_inv
   
+  # Compute diag(A^{-1}W Sigma_u + Sigma_u W' (A^{-1})')
+  # Let A = BW(BB') so M = A + A', and diag(M) = diag(A) + diag(A') = 2 * diag(A)
+  # For diag(A) = rowSums(BW * BBt)
+  #diag_term <- 2 * Matrix::diag(B %*% W %*% Matrix::tcrossprod(B))
   
-  # Optimized diagonal calculation
-  diag_term <- Matrix::rowSums((B %*% C) * B)
-  Drho <- 0.5 * sigma_inv * diag_term
+  BW        <- B %*% W
+  BBt       <- Matrix::tcrossprod(B)
+  diag_term <- 2 * Matrix::rowSums(BW * BBt)
+  Drho      <- - 0.5 * sigma_inv^3 * diag_term
   
-  # Score for lambda (optimized)
-  W_ai   <- as.vector(W %*% ai)
-  B_W_ai <- as.vector(B %*% W_ai)
-  G_rho  <- der * (B_W_ai - ai * Drho * sigma_inv)
+  part2  <- Drho * BXbeta
+  G_rho  <- der * (part1 + part2)
   
   G <- cbind(Gb, G_rho)
   out <- list(
@@ -504,6 +504,10 @@ momB_slm <- function(start, y, X, H, listw, link, approximation, pw, tol.solve =
 
 # Faster moment function
 FmomB_slm <- function(start, y, X, H, listw, link, approximation, pw, tol.solve = .Machine$double.eps) {
+  # This function generates: 
+  #  (1) generalized residuals
+  #  (2) the moment conditions 
+  #  (3) the gradient dv/dtheta for SLM binary models
   K      <- ncol(X)
   N      <- nrow(X)
   beta   <- start[1:K]
@@ -517,7 +521,8 @@ FmomB_slm <- function(start, y, X, H, listw, link, approximation, pw, tol.solve 
   sigma     <- sqrt(Matrix::rowSums(B^2))  # More efficient than  diag(tcrossprod(B))
   sigma_inv <- 1 / sigma
   BX        <- B %*% X
-  ai        <- as.vector(BX %*% beta) * sigma_inv
+  BXbeta    <- BX %*% beta
+  ai        <- as.vector(BXbeta) * sigma_inv
   
   # Choose link functions efficiently
   if (link == "probit") {
@@ -543,22 +548,19 @@ FmomB_slm <- function(start, y, X, H, listw, link, approximation, pw, tol.solve 
   
   # Make gradient
   der <- (ffa * Fa - fa^2) / (Fa^2)
-  Gb  <- BX * der * sigma_inv # Automatic recycling
+  Gb  <- BX * der * sigma_inv 
   
-  # Approximate diag(Sigma_u %*% (W'A + A'W)  %*% Sigma_u)
-  AtW <- Matrix::tcrossprod(A, W)
-  WtA <- Matrix::crossprod(W, A) # More efficient than t(W) %*% A
-  M   <- WtA + AtW   # correct for non-symmetric W
+  part1  <- (B %*% (W %*% BXbeta)) * sigma_inv
+  
+  # Approximation
 
+  WB        <- W %*% B
+  BWB       <- B %*% WB
+  diag_term <- 2 * Matrix::rowSums(B * BWB)
+  Drho      <- - 0.5 * sigma_inv^3 * diag_term
   
-  # Optimized diagonal calculation (NOTE: this is just an approximation)
-  diag_term <- Matrix::rowSums((B %*% M) * B)
-  Drho <- 0.5 * sigma_inv * diag_term
-  
-  # Score for lambda (optimized)
-  W_ai   <- as.vector(W %*% ai)
-  B_W_ai <- as.vector(B %*% W_ai)
-  G_rho  <- der * (B_W_ai - ai * Drho * sigma_inv)
+  part2  <- Drho * BXbeta
+  G_rho  <- der * (part1 + part2)
   
   G <- cbind(Gb, G_rho)
   out <- list(
@@ -1000,26 +1002,22 @@ predict.bingmm <- function(object,
   if (het){
     SinvX        <- as.matrix(Sinv %*% X)
     SinvX_scaled <- SinvX * sigma_inv
-    der_beta     <- dfa * SinvX  
+    der_beta     <- dfa * SinvX_scaled  
   } else {
     SinvX        <- as.matrix(Sinv %*% X)
     der_beta     <- dfa * SinvX
   }
   
+  
   # Derivative w.r.t lambda
   if (het){
-    A           <- Matrix::Diagonal(n) - lambda * W
-    Sigma_u     <- Matrix::tcrossprod(Sinv)
-    AtW         <- Matrix::tcrossprod(A, W)
-    WtA         <- Matrix::crossprod(W, A)
-    M           <- WtA + AtW
-    
-    sigma_inv3      <- sigma_inv^3
-    Sxb_scaled      <- Sxb * sigma_inv3
-    der_Sigmau_diag <- rowSums((Sigma_u %*% M) * Sigma_u)
-    term1           <- 0.5 * Sxb_scaled * der_Sigmau_diag
-    der_Sinv        <- Sinv %*% W %*% Sinv
-    term2           <- (Sinv %*% (der_Sinv %*% Xb)) * sigma_inv
+    BW        <- Sinv %*% W
+    BBt       <- Matrix::tcrossprod(Sinv)
+    diag_term <- 2 * Matrix::rowSums(BW * BBt)
+    Drho      <- - 0.5 * sigma_inv^3 * diag_term
+    term1     <- Drho * Sxb
+  
+    term2           <- (Sinv %*% W %*% Sinv %*% Xb) * sigma_inv
     der_lambda      <- dfa * (term1 + term2)
   } else {
     der_lambda      <- dfa * drop(Sinv %*% W %*% Sinv %*% Xb)
