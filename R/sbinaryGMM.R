@@ -270,17 +270,7 @@ sbinaryGMM <- function(formula,
   ## Starting values for optimization of GMM
   if (is.null(start)){
     # Try initial values from probit/logit
-    glm_attempt <- tryCatch(
-      glm.fit(as.matrix(X), y, family = binomial(link = link)),
-      warning = function(w) {
-        warning("Warning during glm.fit(): ", conditionMessage(w))
-        return(NULL)
-      },
-      error = function(e) {
-        warning("Error during glm.fit(): ", conditionMessage(e))
-        return(NULL)
-      }
-    )
+    glm_attempt <- glm.fit(as.matrix(X), y, family = binomial(link = link))
     
     if (!is.null(glm_attempt) && !anyNA(glm_attempt$coefficients)) {
       b_init <- glm_attempt$coefficients
@@ -368,6 +358,8 @@ sbinaryGMM <- function(formula,
                  pw            = pw, 
                  fastmom       = fastmom)
     Psi <- Matrix::solve(S, tol = tol.solve)
+    #print(S)
+    #Psi <- Matrix::solve(S)
     #Psi <- chol2inv(chol(S))  # More stable than solve() for symmetric matrix
     
     if (verbose) cat("\nSecond-step GMM optimization using S moment-weighing matrix\n")
@@ -497,7 +489,8 @@ momB_slm <- function(start, y, X, H, listw, link, approximation, pw, tol.solve =
     G = G,
     v = v,
     u = y - pfun(ai),
-    vu = (fa^2) / (Fa * (1 - Fa))
+    #vu = (fa^2) / (Fa * (1 - Fa)) # This makes S^{-1} to have problems
+    vu = (fa^2) / pmax((Fa * (1 - Fa)), .Machine$double.eps)
   )
   return(out)
 }
@@ -568,7 +561,7 @@ FmomB_slm <- function(start, y, X, H, listw, link, approximation, pw, tol.solve 
     G = G,
     v = v,
     u = y - pfun(ai),
-    vu = (fa^2) / (Fa * (1 - Fa))
+    vu = (fa^2) / pmax((Fa * (1 - Fa)), .Machine$double.eps)
   )
   return(out)
 }
@@ -597,60 +590,61 @@ J_minML <- function(start, y, X, H, listw, link, Psi, gradient = FALSE, approxim
   
   return(J)
 }
-# #Make S matrix: var-cov of moments
-# makeS <- function(b_hat, y, X, H, listw, link, wmatrix, approximation, pw, fastmom){
+
+#Make S matrix: var-cov of moments
+makeS <- function(b_hat, y, X, H, listw, link, wmatrix, approximation, pw, fastmom){
+  N <- nrow(X)
+  evm <- if (fastmom) {
+    FmomB_slm(start = b_hat, y = y, X = X, H = H, listw = listw, link = link, approximation = approximation, pw = pw)
+  } else {
+    momB_slm(start = b_hat, y = y, X = X, H = H, listw = listw, link = link, approximation = approximation, pw = pw)
+  }
+  if (wmatrix == "iid") {
+    u_hat <- evm$v # predicted generalized residuals
+    Shat <- 0
+    for (i in 1:N) {
+      Shat <- Shat + (u_hat[i] ^ 2 * tcrossprod(H[i,])) #klier and McMillen (2008)
+    }
+    Shat <- Shat / N
+  }
+  if (wmatrix == "robust"){
+    vu       <- evm$vu # This is f^2 / ((1 - F)*F)
+    Shat <- 0
+    for (i in 1:N) {
+      Shat <- Shat + (H[i, ] %*% t(H[i, ] * vu[i]))    ## Equation(15)
+    }
+    #Shat <- Shat / (N^2)
+    Shat <- Shat / N
+  }
+  return(Shat)
+}
+
+# # Make S matrix: var-cov of moments
+# makeS <- function(b_hat, y, X, H, listw, link, wmatrix, approximation, pw, fastmom) {
 #   N <- nrow(X)
+# 
 #   evm <- if (fastmom) {
 #     FmomB_slm(start = b_hat, y = y, X = X, H = H, listw = listw, link = link, approximation = approximation, pw = pw)
 #   } else {
 #     momB_slm(start = b_hat, y = y, X = X, H = X, listw = listw, link = link, approximation = approximation, pw = pw)
 #   }
+# 
 #   if (wmatrix == "iid") {
-#     u_hat <- evm$v # predicted generalized residuals
-#     Shat <- 0
-#     for (i in 1:N) {
-#       Shat <- Shat + (u_hat[i] ^ 2 * tcrossprod(H[i,])) #klier and McMillen (2008)
-#     }
-#     Shat <- Shat / N
-#   }
-#   if (wmatrix == "robust"){
-#     vu       <- evm$vu # This is f^2 / ((1 - F)*F)
-#     Shat <- 0
-#     for (i in 1:N) {
-#       Shat <- Shat + (H[i, ] %*% t(H[i, ] * vu[i]))    ## Equation(15)
-#     }
-#     #Shat <- Shat / (N^2)
-#     Shat <- Shat / N
+#     u_hat <- evm$v  # residuals
+#     # Vectorized version of: sum_i (u_hat[i]^2 * H[i,] %*% t(H[i,]))
+#     weights    <- u_hat^2
+#     H_weighted <- H * weights  # broadcasting weights over rows
+#     Shat       <- Matrix::crossprod(H, H_weighted) / N
+# 
+#   } else if (wmatrix == "robust") {
+#     vu         <- evm$vu  # variance scaling factor
+#     H_weighted <- H * vu  # broadcasting vu over rows
+#     Shat       <- Matrix::crossprod(H, H_weighted) / N
+#   } else {
+#     stop("Unsupported weighting matrix option")
 #   }
 #   return(Shat)
 # }
-
-# Make S matrix: var-cov of moments
-makeS <- function(b_hat, y, X, H, listw, link, wmatrix, approximation, pw, fastmom) {
-  N <- nrow(X)
-
-  evm <- if (fastmom) {
-    FmomB_slm(start = b_hat, y = y, X = X, H = H, listw = listw, link = link, approximation = approximation, pw = pw)
-  } else {
-    momB_slm(start = b_hat, y = y, X = X, H = X, listw = listw, link = link, approximation = approximation, pw = pw)
-  }
-
-  if (wmatrix == "iid") {
-    u_hat <- evm$v  # residuals
-    # Vectorized version of: sum_i (u_hat[i]^2 * H[i,] %*% t(H[i,]))
-    weights    <- u_hat^2
-    H_weighted <- H * weights  # broadcasting weights over rows
-    Shat       <- Matrix::crossprod(H, H_weighted) / N
-
-  } else if (wmatrix == "robust") {
-    vu         <- evm$vu  # variance scaling factor
-    H_weighted <- H * vu  # broadcasting vu over rows
-    Shat       <- Matrix::crossprod(H, H_weighted) / N
-  } else {
-    stop("Unsupported weighting matrix option")
-  }
-  return(Shat)
-}
 
 ### Overtest
 #over.test <- function(object, ...){
