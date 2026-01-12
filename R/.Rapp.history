@@ -1,0 +1,4 @@
+I_N <- diag(3)
+I_T <- diag(2)
+kronecker(I_N, I_T)
+kronecker(I_T, I_N)

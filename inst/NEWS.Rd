@@ -2,6 +2,14 @@
 \title{spldv News}
 \encoding{UTF-8}
 
+\section{CHANGES IN VERSION 0.2.2}{
+\subsection{NEW FEATURES}{
+    \itemize{
+      \item Fixes bug in S matrix. 
+    }
+  }  
+}
+
 \section{CHANGES IN VERSION 0.2.0}{
 \subsection{NEW FEATURES}{
     \itemize{
@@ -9,7 +17,8 @@
       \item Includes the argument fastmom argument in sbinaryGMM function which speed up the computation time.
       \item New functionalities for computing marginal effects. 
       \item Fixed a bug in the gradient of GMM models. 
-      \item atmeans argument for marginal effects is deprecated. 
+      \item atmeans argument for marginal effects is deprecated.
+      \item Fixed overflow in the S matrix.
       \item Improved documentation.
     }
   }  
