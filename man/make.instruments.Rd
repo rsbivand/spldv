@@ -7,7 +7,7 @@
 make.instruments(listw, x, q)
 }
 \arguments{
-\item{listw}{object. An object of class \code{listw}, \code{matrix}, or \code{Matrix}.}
+\item{listw}{object. An object of class \code{matrix}, or \code{Matrix}.}
 
 \item{x}{variable(s) to be lagged}
 

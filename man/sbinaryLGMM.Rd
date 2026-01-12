@@ -29,21 +29,21 @@ sbinaryLGMM(
 \method{print}{summary.binlgmm}(x, digits = max(3, getOption("digits") - 2), ...)
 }
 \arguments{
-\item{formula}{a symbolic description of the model of the form \code{y ~ x | wx} where \code{y} is the binary dependent variable, \code{x} are the independent variables. The variables after \code{|} are those variables that enter spatially lagged: \eqn{WX}. The variables in the second part of \code{formula} must also appear in the first part.}
+\item{formula}{A symbolic description of the model of the form \code{y ~ x | wx} where \code{y} is the binary dependent variable, \code{x} are the independent variables. The variables after \code{|} are those variables that enter spatially lagged: \eqn{WX}.}
 
-\item{data}{the data of class \code{data.frame}.}
+\item{data}{A \code{data.frame} containing the variables in the model.}
 
-\item{listw}{object. An object of class \code{listw}, \code{matrix}, or \code{Matrix}.}
+\item{listw}{A spatial weights matrix of class \code{listw}, \code{matrix}, or \code{Matrix}.}
 
-\item{nins}{numerical. Order of instrumental-variable approximation; as default \code{nins = 2}, such that \eqn{H = (Z, WZ, W^2Z)} are used as instruments.}
+\item{nins}{Integer. Order of spatial instruments to generate; default is \code{nins = 2}, such that \eqn{H = (Z, WZ, W^2Z)} are used as instruments.}
 
-\item{link}{string. The assumption of the distribution of the error term; it can be either \code{link = "probit"} (the default) or \code{link = "logit"}.}
+\item{link}{Character string; distributional assumption on the error term. Either \code{"probit"} (default) or \code{"logit"}.}
 
 \item{...}{additional arguments.}
 
 \item{x, object, }{an object of class \code{binlgmm}.}
 
-\item{digits}{the number of digits}
+\item{digits}{Integer. The number of digits for \code{summary} methods.}
 }
 \value{
 An object of class ``\code{bingmm}'', a list with elements:
@@ -55,13 +55,16 @@ An object of class ``\code{bingmm}'', a list with elements:
 \item{listw}{the spatial weight matrix,}
 \item{link}{the string indicating the distribution of the error term,}
 \item{fit}{an object of \code{lm} representing the T2SLS,}
-\item{formula}{the formula.}
+\item{formula}{the formula,}
+\item{data}{the data,}
+\item{contrastsX}{the contrasts used in the first part of the formula,}
+\item{contrastsD}{the contrasts used in the second part of the formula,}
+\item{Xlevels}{a record of the levels of the factors used in fitting.}
 }
 \description{
 Estimation of SAR model for binary dependent variables (either Probit or Logit), using Linearized GMM estimator suggested by Klier and McMillen (2008). The model is: 
-
 \deqn{
-y^*= X\beta + WX\gamma + \lambda W y^* + \epsilon = Z\delta + \lambda Wy^{*} + \epsilon
+y^*= X\beta + WX\gamma + \lambda W y^* + \epsilon = Z\delta + \lambda Wy^{*} + \epsilon,
 }
 where  \eqn{y = 1} if \eqn{y^*>0} and 0 otherwise; \eqn{\epsilon \sim N(0, 1)} if \code{link = "probit"} or \eqn{\epsilon \sim L(0, \pi^2/3)} \code{link = "logit"}.
 }

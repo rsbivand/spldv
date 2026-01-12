@@ -7,7 +7,7 @@
 \alias{print.bingmm}
 \alias{summary.bingmm}
 \alias{print.summary.bingmm}
-\title{Estimation of SAR for binary dependent models using GMM}
+\title{GMM Estimation for Binary Spatial Autoregressive Models.}
 \usage{
 sbinaryGMM(
   formula,
@@ -26,6 +26,7 @@ sbinaryGMM(
   print.init = FALSE,
   pw = 5,
   tol.solve = .Machine$double.eps,
+  fastmom = FALSE,
   ...
 )
 
@@ -54,49 +55,51 @@ sbinaryGMM(
 \method{print}{summary.bingmm}(x, digits = max(5, getOption("digits") - 3), ...)
 }
 \arguments{
-\item{formula}{a symbolic description of the model of the form \code{y ~ x | wx} where \code{y} is the binary dependent variable, \code{x} are the independent variables. The variables after \code{|} are those variables that enter spatially lagged: \eqn{WX}. The variables in the second part of \code{formula} must also appear in the first part. This rules out situations in which one of the regressors can be specified only in lagged form.}
+\item{formula}{A symbolic description of the model of the form \code{y ~ x | wx} where \code{y} is the binary dependent variable, \code{x} are the independent variables. The variables after \code{|} are those variables that enter spatially lagged: \eqn{WX}.}
 
-\item{data}{the data of class \code{data.frame}.}
+\item{data}{A \code{data.frame} containing the variables in the model.}
 
-\item{listw}{object. An object of class \code{listw}, \code{matrix}, or \code{Matrix}.}
+\item{listw}{A spatial weights matrix of class \code{listw}, \code{matrix}, or \code{Matrix}.}
 
-\item{nins}{numerical. Order of instrumental-variable approximation; as default \code{nins = 2}, such that \eqn{H = (Z, WZ, W^2Z)} are used as instruments.}
+\item{nins}{Integer. Order of spatial instruments to generate; default is \code{nins = 2}, such that \eqn{H = (Z, WZ, W^2Z)} are used as instruments.}
 
-\item{link}{string. The assumption of the distribution of the error term; it can be either \code{link = "probit"} (the default) or \code{link = "logit"}.}
+\item{link}{Character string; distributional assumption on the error term. Either \code{"probit"} (default) or \code{"logit"}.}
 
-\item{winitial}{string. A string indicating the initial moment-weighting matrix \eqn{\Psi}; it can be either \code{winitial = "optimal"} (the default) or \code{winitial = "identity"}.}
+\item{winitial}{Character string. A string indicating the initial moment-weighting matrix \eqn{\Psi}; it can be either \code{winitial = "optimal"} (the default, \eqn{(H'H/n)^{-1}}) or \code{winitial = "identity"}.}
 
-\item{s.matrix}{string. Only valid of \code{type = "twostep"} is used. This is a string indicating the type of variance-covariance matrix \eqn{\hat{S}} to be used in the second-step procedure; it can be \code{s.matrix = "robust"} (the default) or \code{s.matrix = "iid"}.}
+\item{s.matrix}{Character string. Only valid of \code{type = "twostep"} is used. This is a string indicating the type of variance-covariance matrix \eqn{\hat{S}} to be used in the second-step procedure; it can be \code{s.matrix = "robust"} (the default) or \code{s.matrix = "iid"}.}
 
-\item{type}{string. A string indicating whether the one-step (\code{type = "onestep"}), or two-step GMM (\code{type = "twostep"}) should be computed.}
+\item{type}{Character string. A string indicating whether the one-step (\code{type = "onestep"}), or two-step GMM (\code{type = "twostep"}) should be computed.}
 
-\item{gradient}{logical. Only for testing procedures. Should the analytic gradient be used in the GMM optimization procedure? \code{TRUE} as default. If \code{FALSE}, then the numerical gradient is used.}
+\item{gradient}{Logical. Only for testing procedures. Should the analytic gradient be used in the GMM optimization procedure? \code{TRUE} as default. If \code{FALSE}, then the numerical gradient is used.}
 
-\item{start}{if not \code{NULL}, the user must provide a vector of initial parameters for the optimization procedure. When \code{start = NULL}, \code{sbinaryGMM} uses the traditional Probit or Logit estimates as initial values for the parameters, and the correlation between \eqn{y} and \eqn{Wy} as initial value for \eqn{\lambda}.}
+\item{start}{Vector of optional starting values. If not \code{NULL}, the user must provide a vector of initial parameters for the optimization procedure. When \code{start = NULL}, \code{sbinaryGMM} uses the traditional Probit or Logit estimates as initial values for the parameters, and the correlation between \eqn{y} and \eqn{Wy} as initial value for \eqn{\lambda}.}
 
-\item{cons.opt}{logical. Should a constrained optimization procedure for \eqn{\lambda} be used? \code{FALSE} as default.}
+\item{cons.opt}{Logical. Should a constrained optimization procedure for \eqn{\lambda} be used? \code{FALSE} as default.}
 
-\item{approximation}{logical. If \code{TRUE} then \eqn{(I - \lambda W)^{-1}} is approximated as \eqn{I + \lambda W + \lambda^2 W^2 + \lambda^3 W^3 + ... +\lambda^q W^q}. The default is \code{FALSE}.}
+\item{approximation}{Logical. If \code{TRUE}, then \eqn{(I - \lambda W)^{-1}} is approximated as \eqn{I + \lambda W + \lambda^2 W^2 + \lambda^3 W^3 + ... +\lambda^q W^q}. The default is \code{FALSE}.}
 
-\item{verbose}{logical. If \code{TRUE}, the code reports messages and some values during optimization.}
+\item{verbose}{Logical. If \code{TRUE}, the code reports messages and some values during optimization.}
 
-\item{print.init}{logical. If \code{TRUE} the initial parameters used in the optimization of the first step are printed.}
+\item{print.init}{Logical. If \code{TRUE} the initial parameters used in the optimization of the first step are printed.}
 
-\item{pw}{numeric. The power used for the approximation \eqn{I + \lambda W + \lambda^2 W^2 + \lambda^3 W^3 + ... +\lambda^q W^q}. The default is 5.}
+\item{pw}{Integer. The power used for the approximation \eqn{I + \lambda W + \lambda^2 W^2 + \lambda^3 W^3 + ... +\lambda^q W^q}. The default is 5.}
 
 \item{tol.solve}{Tolerance for \code{solve()}.}
 
+\item{fastmom}{Logical. Use faster approximate gradient for \eqn{\lambda}? Default is \code{FALSE}.}
+
 \item{...}{additional arguments passed to \code{maxLik}.}
 
-\item{vce}{string. A string indicating what kind of standard errors should be computed when using \code{summary}. For the one-step GMM estimator, the options are \code{"robust"} and \code{"ml"}. For the two-step GMM estimator, the options are \code{"robust"}, \code{"efficient"} and \code{"ml"}. The option \code{"vce = ml"} is an exploratory method that evaluates the VC of the RIS estimator using the GMM estimates.}
+\item{vce}{Character string. A string indicating what kind of standard errors should be computed when using \code{summary}. For the one-step GMM estimator, the options are \code{"robust"} and \code{"ml"}. For the two-step GMM estimator, the options are \code{"robust"}, \code{"efficient"} and \code{"ml"}. The option \code{"vce = ml"} is an exploratory method that evaluates the VC of the RIS estimator using the GMM estimates.}
 
-\item{method}{string. Only valid if \code{vce = "ml"}. It indicates the algorithm used to compute the Hessian matrix of the RIS estimator. The defult is \code{"bhhh"}.}
+\item{method}{Character string. Only valid if \code{vce = "ml"}. It indicates the algorithm used to compute the Hessian matrix of the RIS estimator. The default is \code{"bhhh"}.}
 
-\item{R}{numeric. Only valid if \code{vce = "ml"}. It indicates the number of draws used to compute the simulated probability in the RIS estimator.}
+\item{R}{Integer. Only valid if \code{vce = "ml"}. It indicates the number of draws used to compute the simulated probability in the RIS estimator.}
 
-\item{x, object, }{an object of class \code{bingmm}}
+\item{x, object, }{an object of class \code{bingmm}.}
 
-\item{digits}{the number of digits}
+\item{digits}{Integer. The number of digits for \code{summary} methods.}
 }
 \value{
 An object of class ``\code{bingmm}'', a list with elements:
@@ -111,19 +114,25 @@ An object of class ``\code{bingmm}'', a list with elements:
 \item{Psi}{the moment-weighting matrix used in the last round,}
 \item{type}{type of model that was fitted,}
 \item{s.matrix}{the type of S matrix used in the second round,}
-\item{winitial}{the moment-weighting matrix used for the first step procedure}
+\item{winitial}{the moment-weighting matrix used for the first step procedure,}
 \item{opt}{object of class \code{maxLik},}
 \item{approximation}{a logical value indicating whether approximation was used to compute the inverse matrix,}
 \item{pw}{the powers for the approximation,}
-\item{formula}{the formula.}
+\item{formula}{the formula,}
+\item{data}{the data, }
+\item{contrastsX}{the contrasts used in the first part of the formula,}
+\item{contrastsD}{the contrasts used in the second part of the formula,}
+\item{Xlevels}{a record of the levels of the factors used in fitting,}
+\item{fastmom}{whether the model was fitted using the faster gradient for \eqn{\lambda}.}
 }
 \description{
-Estimation of SAR model for binary dependent variables (either Probit or Logit), using one- or two-step GMM estimator. The type of model supported has the following structure: 
+Estimates a Spatial Autoregressive (SAR) model for binary outcomes using the Generalized Method of Moments (GMM). The model supports both Probit and Logit links, with one-step or two-step GMM estimation. The structural equation is:
 
 \deqn{
-y^*= X\beta + WX\gamma + \lambda W y^* + \epsilon = Z\delta + \lambda Wy^{*} + \epsilon
+y^*= X\beta + WX\gamma + \lambda W y^* + \epsilon = Z\delta + \lambda Wy^{*} + \epsilon,
 }
-where  \eqn{y = 1} if \eqn{y^*>0} and 0 otherwise; \eqn{\epsilon \sim N(0, 1)} if \code{link = "probit"} or \eqn{\epsilon \sim L(0, \pi^2/3)} if \code{link = "logit"}.
+where  \eqn{y = 1} if \eqn{y^*>0} and 0 otherwise.
+The error term \eqn{\varepsilon} follows a standard normal distribution (\code{link = "probit"}) or logistic distribution (\code{link = "logit"}).
 }
 \details{
 The data generating process is:
@@ -131,14 +140,14 @@ The data generating process is:
 \deqn{
 y^*= X\beta + WX\gamma + \lambda W y^* + \epsilon = Z\delta + \lambda Wy^{*} + \epsilon
 }
-where  \eqn{y = 1} if \eqn{y^*>0} and 0 otherwise; \eqn{\epsilon \sim N(0, 1)} if \code{link = "probit"} or \eqn{\epsilon \sim L(0, \pi^2/3)} if \code{link = "logit"}.. The general GMM
-  estimator minimizes 
+where  \eqn{y = 1} if \eqn{y^*>0} and 0 otherwise; \eqn{\epsilon \sim N(0, 1)} if \code{link = "probit"} or \eqn{\epsilon \sim L(0, \pi^2/3)} if \code{link = "logit"}. The general GMM
+  estimator minimizes: 
 \deqn{
- J(\theta) = g'(\theta)\hat{\Psi} g(\theta)
+ J(\theta) = g'(\theta)\hat{\Psi} g(\theta),
 }
 where \eqn{\theta = (\beta, \gamma, \lambda)} and 
 \deqn{
-g = n^{-1}H'v
+g = n^{-1}H'v,
 }
 where \eqn{v} is the generalized residuals. Let \eqn{Z = (X, WX)}, then the instrument matrix \eqn{H} contains the linearly independent
 columns of \eqn{H = (Z, WZ, ..., W^qZ)}. The one-step GMM estimator minimizes \eqn{J(\theta)} setting either 

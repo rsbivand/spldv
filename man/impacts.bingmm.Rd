@@ -8,48 +8,74 @@
 \alias{print.impacts.bingmm}
 \alias{summary.impacts.bingmm}
 \alias{print.summary.impacts.bingmm}
-\title{Estimation of the average marginal effects for SARB models.}
+\title{Compute Marginal Effects for Spatial Binary  Models}
 \usage{
 \method{impacts}{bingmm}(
   obj,
-  vcov = NULL,
+  data = NULL,
+  variable = NULL,
+  from.unit = 1,
+  dydx = c("exact", "numeric"),
+  change = NULL,
   vce = c("robust", "efficient", "ml"),
+  type = c("delta", "mc"),
+  result = c("summary", "from.region", "cumulative"),
+  vcov = NULL,
   het = TRUE,
-  atmeans = FALSE,
-  type = c("mc", "delta"),
-  R = 100,
-  approximation = FALSE,
-  pw = 5,
-  tol = 1e-06,
   empirical = FALSE,
+  approximation = FALSE,
+  R = 50,
+  pw = 5,
+  draws = NULL,
+  Q = 3,
+  tol = 1e-06,
+  verbose = FALSE,
   ...
 )
 
 \method{impacts}{binlgmm}(
   obj,
+  data = NULL,
+  variable = NULL,
+  from.unit = 1,
+  dydx = c("exact", "numeric"),
+  change = NULL,
+  vce = c("robust", "efficient", "ml"),
+  type = c("delta", "mc"),
+  result = c("summary", "from.region", "cumulative"),
   vcov = NULL,
   het = TRUE,
-  atmeans = FALSE,
-  type = c("mc", "delta"),
-  R = 100,
-  approximation = FALSE,
-  pw = 5,
-  tol = 1e-06,
   empirical = FALSE,
+  approximation = FALSE,
+  R = 50,
+  pw = 5,
+  draws = NULL,
+  Q = 3,
+  tol = 1e-06,
+  verbose = FALSE,
   ...
 )
 
 \method{impacts}{binris}(
   obj,
+  data = NULL,
+  variable = NULL,
+  from.unit = 1,
+  dydx = c("exact", "numeric"),
+  change = NULL,
+  vce = c("robust", "efficient", "ml"),
+  type = c("delta", "mc"),
+  result = c("summary", "from.region", "cumulative"),
   vcov = NULL,
   het = TRUE,
-  atmeans = FALSE,
-  type = c("mc", "delta"),
-  R = 100,
-  approximation = FALSE,
-  pw = 5,
-  tol = 1e-06,
   empirical = FALSE,
+  approximation = FALSE,
+  R = 50,
+  pw = 5,
+  draws = NULL,
+  Q = 3,
+  tol = 1e-06,
+  verbose = FALSE,
   ...
 )
 
@@ -60,33 +86,49 @@
 \method{print}{summary.impacts.bingmm}(x, digits = max(3, getOption("digits") - 3), ...)
 }
 \arguments{
-\item{obj}{an object of class \code{bingmm}, \code{binlgmm} or \code{binris}.}
+\item{obj}{An object of class \code{bingmm}, \code{binlgmm} or \code{binris}.}
 
-\item{vcov}{an estimate of the asymptotic variance-covariance matrix of the parameters for a \code{bingmm} or \code{binlgmm} object.}
+\item{data}{Optional dataset used for computing partial effects.}
 
-\item{vce}{string indicating what kind of variance-covariance matrix of the estimate should be computed when using \code{effect.bingmm}. For the one-step GMM estimator, the options are \code{"robust"} and \code{"ml"}. For the two-step GMM estimator, the options are \code{"robust"}, \code{"efficient"} and \code{"ml"}. The option \code{"vce = ml"} is an exploratory method that evaluates the VC of the RIS estimator using the GMM estimates.}
+\item{variable}{Variable name (string) for which marginal effects are computed.}
 
-\item{het}{logical. If \code{TRUE} (the default), then the heteroskedasticity is taken into account when computing the average marginal effects.}
+\item{from.unit}{Integer specifying the spatial unit (row) for computing impacts.}
 
-\item{atmeans}{logical. If \code{FALSE} (the default), then the average marginal effects are computed at the unit level.}
+\item{dydx}{Character: type of derivative approximation to use (\code{"exact"} or \code{"numeric"}).}
 
-\item{type}{string indicating which method is used to compute the standard errors of the average marginal effects. If \code{"mc"}, then the Monte Carlo approximation is used. If \code{"delta"}, then the Delta Method is used.}
+\item{change}{For numeric variables, a vector indicating the lower and upper value to compute the partial change.}
 
-\item{R}{numerical. Indicates the number of draws used in the Monte Carlo approximation if \code{type = "mc"}.}
+\item{vce}{A string indicating what kind of variance-covariance matrix of the estimate should be computed when using \code{effect.bingmm}. For the one-step GMM estimator, the options are \code{"robust"} and \code{"ml"}. For the two-step GMM estimator, the options are \code{"robust"}, \code{"efficient"} and \code{"ml"}. The option \code{"vce = ml"} is an exploratory method that evaluates the VC of the RIS estimator using the GMM estimates.}
 
-\item{approximation}{logical. If \code{TRUE} then \eqn{(I - \lambda W)^{-1}} is approximated as \eqn{I + \lambda W + \lambda^2 W^2 + \lambda^3 W^3 + ... +\lambda^q W^q}. The default is \code{FALSE}.}
+\item{type}{String indicating which method is used to compute the standard errors of the marginal effects. If \code{"mc"}, then the Monte Carlo approximation is used. If \code{"delta"}, then the Delta Method is used.}
+
+\item{result}{String indicating the output format: \code{"summary"} presents the average direct, indirect or total effects; \code{"from.region"} display the total effect of the variable in \code{"variable"} form spatial unit indicated in \code{"from.unit"}; if \code{"cumulative"} the cumulative effect up to power order indicated in \code{"Q"} for the variable in \code{"variable"} form spatial unit indicated in \code{"from.unit"} is returned.}
+
+\item{vcov}{Optional user-supplied variance-covariance matrix.}
+
+\item{het}{Logical. If \code{TRUE} (the default), then the heteroskedasticity is taken into account when computing the marginal effects.}
+
+\item{empirical}{Logical. Argument passed to \code{mvrnorm} (default \code{FALSE}): if \code{TRUE}, the coefficients and their covariance matrix specify the empirical not population mean and covariance matrix.}
+
+\item{approximation}{Logical. If \code{TRUE} then \eqn{(I - \lambda W)^{-1}} is approximated as \eqn{I + \lambda W + \lambda^2 W^2 + \lambda^3 W^3 + ... +\lambda^q W^q}. The default is \code{FALSE}.}
+
+\item{R}{Numerical. Indicates the number of draws used in the Monte Carlo approximation if \code{type = "mc"}.}
 
 \item{pw}{numeric. The power used for the approximation \eqn{I + \lambda W + \lambda^2 W^2 + \lambda^3 W^3 + ... +\lambda^q W^q}. The default is 5.}
 
-\item{tol}{Argument passed to \code{mvrnorm}: tolerance (relative to largest variance) for numerical lack of positive-definiteness in the coefficient covariance matrix.}
+\item{draws}{Optional matrix of parameter draws for Monte Carlo simulation.}
 
-\item{empirical}{logical. Argument passed to \code{mvrnorm} (default \code{FALSE}): if \code{TRUE}, the coefficients and their covariance matrix specify the empirical not population mean and covariance matrix}
+\item{Q}{Number of columns for cumulative effects (if applicable).}
+
+\item{tol}{Numerical. Argument passed to \code{mvrnorm}: tolerance (relative to largest variance) for numerical lack of positive-definiteness in the coefficient covariance matrix.}
+
+\item{verbose}{Logical. Display progress.}
 
 \item{...}{further arguments. Ignored.}
 
-\item{x}{an object of class \code{impacts.bingmm}.}
+\item{x}{An object of class \code{impacts.bingmm} for \code{print} methods.}
 
-\item{object}{an object of class \code{impacts.bingmm} for \code{summary} methods.}
+\item{object}{An object of class \code{impacts.bingmm} for \code{summary} methods.}
 
 \item{digits}{the number of digits.}
 }
@@ -94,7 +136,8 @@
 An object of class \code{impacts.bingmm}.
 }
 \description{
-Obtain the average marginal effects from \code{bingmm},  \code{binlgmm}  or \code{binris} class model.
+Computes marginal effects (direct, indirect, total, from-region, and cumulative) from a spatial binary response model.
+Supports inference via the Delta method or Monte Carlo simulation.
 }
 \details{
 Let the model be:
@@ -127,16 +170,16 @@ data(oldcol, package = "spdep")
 COL.OLD$CRIMED <- as.numeric(COL.OLD$CRIME > 35)
 
 # Two-step (Probit) GMM estimator
-ts <- sbinaryGMM(CRIMED ~ INC + HOVAL| HOVAL,
+ts <- sbinaryGMM(CRIMED ~ INC * HOVAL + factor(CP) | HOVAL,
                 link = "probit", 
                 listw = spdep::nb2listw(COL.nb, style = "W"), 
                 data = COL.OLD, 
                 type = "twostep")
                 
-# Marginal effects using Delta Method
+# Summary marginal effects using Delta Method
 summary(impacts(ts, type = "delta"))
 
-# Marginal effects using MC with 100 draws
+# Summary marginal effects using MC with 100 draws
 summary(impacts(ts, type = "mc", R = 100))
 
 # Marginal effects using efficient VC matrix
@@ -144,6 +187,14 @@ summary(impacts(ts, type = "delta", vce = "efficient"))
 
 # Marginal effects using efficient VC matrix and ignoring the heteroskedasticity
 summary(impacts(ts, type = "delta", vce = "efficient", het = FALSE))
+
+# Obtain total impact when INC changes in region 20
+imp <- impacts(ts, type = "delta", result = "from.region", from.unit = 20, variable = "INC")
+head(imp$out, 6)
+
+# Cumulative impact when INC changes in region 20 up to power = 3
+cum <- impacts(ts, type = "delta", result = "cumulative", from.unit = 20, variable = "INC", Q = 3)
+head(cum$out$`Q:3`, 6)
 
 # Marginal effects using  RIS estimator
 ris_sar <- sbinaryRis(CRIMED ~ INC + HOVAL, data = COL.OLD,
@@ -159,3 +210,5 @@ summary(impacts(ris_sar, method = "mc", R = 100))
 \author{
 Mauricio Sarrias and Gianfranco Piras.
 }
+\keyword{effects}
+\keyword{marginal}

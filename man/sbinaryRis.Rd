@@ -52,39 +52,39 @@ sbinaryRis(
 \method{print}{summary.binris}(x, digits = max(3, getOption("digits") - 2), ...)
 }
 \arguments{
-\item{formula}{a symbolic description of the model of the form \code{y ~ x | wx} where \code{y} is the binary dependent variable, \code{x} are the independent variables. The variables after \code{|} are those variables that enter spatially lagged: \eqn{WX}. The variables in the second part of \code{formula} must also appear in the first part. This rules out situations in which one of the regressors can be specified only in lagged form.}
+\item{formula}{A symbolic description of the model of the form \code{y ~ x | wx} where \code{y} is the binary dependent variable, \code{x} are the independent variables. The variables after \code{|} are those variables that enter spatially lagged: \eqn{WX}.}
 
-\item{data}{the data of class \code{data.frame}.}
+\item{data}{A \code{data.frame} containing the variables in the model.}
 
-\item{subset}{an optional vector specifying a subset of observations to be used in the fitting process.}
+\item{subset}{An optional vector specifying a subset of observations to be used in the fitting process.}
 
-\item{na.action}{a function which indicates what should happen when the data contains \code{NA}s.}
+\item{na.action}{A function which indicates what should happen when the data contains \code{NA}s.}
 
-\item{listw}{object. An object of class \code{listw}, \code{matrix}, or \code{Matrix}.}
+\item{listw}{Object. An object of class \code{listw}, \code{matrix}, or \code{Matrix}.}
 
-\item{R}{numerical. The number of draws used in RIS (GHK) simulator.}
+\item{R}{Integer. The number of draws used in RIS (GHK) simulator.}
 
-\item{model}{string. A string indicating which model to estimate. It can be \code{"SAR"} for the spatial autoregressive spatial model or \code{"SEM"} for the spatial error model.}
+\item{model}{String. A string indicating which model to estimate. It can be \code{"SAR"} for the spatial autoregressive spatial model or \code{"SEM"} for the spatial error model.}
 
-\item{varcov}{string. A string indicating over which variance-covariance matrix to apply the Chokesly factorization.}
+\item{varcov}{String. A string indicating over which variance-covariance matrix to apply the Chokesly factorization.}
 
-\item{approximation}{logical. If \code{TRUE} (the default) then \eqn{(I - \lambda W)^{-1}} or \eqn{(I - \rho W)^{-1}} is approximated as \eqn{I + \lambda W + \lambda^2 W^2 + \lambda^3 W^3 + ... +\lambda^q W^q}. If  \code{FALSE}, then the inverse is computed without approximations.}
+\item{approximation}{Logical. If \code{TRUE} (the default) then \eqn{(I - \lambda W)^{-1}} or \eqn{(I - \rho W)^{-1}} is approximated as \eqn{I + \lambda W + \lambda^2 W^2 + \lambda^3 W^3 + ... +\lambda^q W^q}. If  \code{FALSE}, then the inverse is computed without approximations.}
 
-\item{pw}{numeric. The power used for the approximation \eqn{I + \lambda W + \lambda^2 W^2 + \lambda^3 W^3 + ... +\lambda^q W^q}. The default is 5.}
+\item{pw}{Integer. The power used for the approximation \eqn{I + \lambda W + \lambda^2 W^2 + \lambda^3 W^3 + ... +\lambda^q W^q}. The default is 5.}
 
-\item{start}{if not \code{NULL}, the user must provide a vector of initial parameters for the optimization procedure. When \code{start = NULL}, \code{sbinaryRis} uses the traditional Probit estimates as initial values for the parameters, and the correlation between \eqn{y} and \eqn{Wy} as initial value for \eqn{\lambda} or \eqn{\rho}.}
+\item{start}{If not \code{NULL}, the user must provide a vector of initial parameters for the optimization procedure. When \code{start = NULL}, \code{sbinaryRis} uses the traditional Probit estimates as initial values for the parameters, and the correlation between \eqn{y} and \eqn{Wy} as initial value for \eqn{\lambda} or \eqn{\rho}.}
 
-\item{Qneg}{logical. Whether to construct the diagonal elements of \eqn{Q}. If \code{Qneg = FALSE}, then \eqn{q_{ii} = 2y_{i} - 1}. If  \code{Qneg = TRUE}, then \eqn{q_{ii} = 1- 2y_{i}}.}
+\item{Qneg}{Logical. Whether to construct the negative of the diagonal elements of \eqn{Q}. If \code{Qneg = FALSE}, then \eqn{q_{ii} = 2y_{i} - 1}. If  \code{Qneg = TRUE}, then \eqn{q_{ii} = 1- 2y_{i}}.}
 
-\item{print.init}{logical. If \code{TRUE} the initial parameters used in the optimization of the first step are printed.}
+\item{print.init}{Logical. If \code{TRUE} the initial parameters used in the optimization of the first step are printed.}
 
 \item{...}{additional arguments passed to \code{maxLik}.}
 
-\item{x, object, }{an object of class \code{bingmm}.}
+\item{x, object, }{An object of class \code{bingmm}.}
 
-\item{eigentol}{the standard errors are only calculated if the ratio of the smallest and largest eigenvalue of the Hessian matrix is less than \code{eigentol}.  Otherwise the Hessian is treated as singular.}
+\item{eigentol}{The standard errors are only calculated if the ratio of the smallest and largest eigenvalue of the Hessian matrix is less than \code{eigentol}.  Otherwise the Hessian is treated as singular.}
 
-\item{digits}{the number of digits}
+\item{digits}{The number of digits for \code{summary} methods.}
 }
 \value{
 An object of class "\code{binris}", a list with elements:
@@ -99,7 +99,11 @@ An object of class "\code{binris}", a list with elements:
 \item{listw}{the spatial weight matrix,}
 \item{formula}{the formula,}
 \item{R}{number of draws,}
-\item{mf}{model frame.}
+\item{mf}{model frame,}
+\item{data}{the data, }
+\item{contrastsX}{the contrasts used in the first part of the formula,}
+\item{contrastsD}{the contrasts used in the second part of the formula,}
+\item{Xlevels}{a record of the levels of the factors used in fitting.}
 }
 \description{
 Estimation of spatial probit model  using RIS-normal (a.k.a GHK) simulator. The models can be the SAR or SEM probit model model. The SAR probit model has the following structure: 
@@ -118,7 +122,7 @@ where \eqn{y = 1} if \eqn{y^*>0} and 0 otherwise, \eqn{Z = (X, WX)}, \eqn{\delta
 }
 \details{
 The models are estimated by simulating the probabilities using the RIS-normal (GHK) simulator. The aim is to evaluate 
-the multivariate density function \eqn{P(\upsilon = Q u < s)}, where \eqn{Q} is a diagonal matrix with entries \eqn{q_{ii} = 2y_i - 1} and the \eqn{n\times 1} vector
+the multivariate density function \eqn{P(\upsilon = Q u < s)}, where \eqn{Q} is a diagonal matrix with entries \eqn{q_{ii} = 2y_i - 1}, and the \eqn{n\times 1} vector
 \eqn{s} depends on whether the model is SAR or SEM. If \code{model = "SAR"}, then \eqn{s = QA_{\lambda}^{-1}Z\delta} where \eqn{A_{\lambda} = (I - \lambda W)}; 
 if \code{model = "SEM"}, then \eqn{s = QZ\delta}. 
 

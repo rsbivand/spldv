@@ -2,20 +2,19 @@
 
 #' @title Estimation of SAR for binary models using Linearized GMM.
 #' @description Estimation of SAR model for binary dependent variables (either Probit or Logit), using Linearized GMM estimator suggested by Klier and McMillen (2008). The model is: 
-#' 
 #' \deqn{
-#' y^*= X\beta + WX\gamma + \lambda W y^* + \epsilon = Z\delta + \lambda Wy^{*} + \epsilon
+#' y^*= X\beta + WX\gamma + \lambda W y^* + \epsilon = Z\delta + \lambda Wy^{*} + \epsilon,
 #' }
 #' where  \eqn{y = 1} if \eqn{y^*>0} and 0 otherwise; \eqn{\epsilon \sim N(0, 1)} if \code{link = "probit"} or \eqn{\epsilon \sim L(0, \pi^2/3)} \code{link = "logit"}.
 #' 
 #' @name sbinaryLGMM
-#' @param formula a symbolic description of the model of the form \code{y ~ x | wx} where \code{y} is the binary dependent variable, \code{x} are the independent variables. The variables after \code{|} are those variables that enter spatially lagged: \eqn{WX}. The variables in the second part of \code{formula} must also appear in the first part. 
-#' @param data the data of class \code{data.frame}.
-#' @param listw object. An object of class \code{listw}, \code{matrix}, or \code{Matrix}.  
-#' @param nins numerical. Order of instrumental-variable approximation; as default \code{nins = 2}, such that \eqn{H = (Z, WZ, W^2Z)} are used as instruments.  
-#' @param link string. The assumption of the distribution of the error term; it can be either \code{link = "probit"} (the default) or \code{link = "logit"}. 
+#' @param formula A symbolic description of the model of the form \code{y ~ x | wx} where \code{y} is the binary dependent variable, \code{x} are the independent variables. The variables after \code{|} are those variables that enter spatially lagged: \eqn{WX}. 
+#' @param data A \code{data.frame} containing the variables in the model.
+#' @param listw A spatial weights matrix of class \code{listw}, \code{matrix}, or \code{Matrix}.
+#' @param nins Integer. Order of spatial instruments to generate; default is \code{nins = 2}, such that \eqn{H = (Z, WZ, W^2Z)} are used as instruments.   
+#' @param link Character string; distributional assumption on the error term. Either \code{"probit"} (default) or \code{"logit"}. 
 #' @param x,object, an object of class \code{binlgmm}.
-#' @param digits the number of digits
+#' @param digits Integer. The number of digits for \code{summary} methods.
 #' @param ... additional arguments.
 #' @details 
 #' 
@@ -51,7 +50,11 @@
 #' \item{listw}{the spatial weight matrix,}
 #' \item{link}{the string indicating the distribution of the error term,}
 #' \item{fit}{an object of \code{lm} representing the T2SLS,}
-#' \item{formula}{the formula.}
+#' \item{formula}{the formula,}
+#' \item{data}{the data,}
+#' \item{contrastsX}{the contrasts used in the first part of the formula,}
+#' \item{contrastsD}{the contrasts used in the second part of the formula,}
+#' \item{Xlevels}{a record of the levels of the factors used in fitting.}
 #' @references 
 #
 #' Klier, T., & McMillen, D. P. (2008). Clustering of auto supplier plants in the United States: generalized method of moments spatial logit for large samples. Journal of Business & Economic Statistics, 26(4), 460-471.
@@ -94,24 +97,29 @@ sbinaryLGMM <- function(formula, data,
   
   # Get variables and run some checks
   y  <- model.response(mf)
-  if (any(is.na(y))) stop("NAs in dependent variable")
+  if (anyNA(y)) stop("NAs in dependent variable")
   if (!all(y %in% c(0, 1, TRUE, FALSE))) stop("All dependent variables must be either 0, 1, TRUE or FALSE")
   if (!is.numeric(y)) y <- as.numeric(y)
   X  <- model.matrix(f1, data = mf, rhs = 1)
+  # Added for prediction
+  contrastsX <- attr(X, "contrasts")
+  Xlevels    <- .getXlevels(attr(mf, "terms"), mf)
   if (Durbin){
-    x.for.w  <- model.matrix(f1, data = mf, rhs = 2)
-    name.wx  <- colnames(x.for.w)
-    ## Check variables are in the first part of formula
-    check.wx <- !(name.wx %in% colnames(X))
-    if (sum(check.wx) > 0) stop("Some variables in WX do not appear in X. Check the formula")
-    WX           <- crossprod(t(W), x.for.w)
-    name.wx      <- name.wx[which(name.wx != "(Intercept)")]
-    WX           <- WX[, name.wx, drop = FALSE] # Delete the constant from the WX
+    x.for.w    <- model.matrix(f1, data = mf, rhs = 2)
+    contrastsD <- attr(x.for.w, "contrasts")
+    name.wx    <- setdiff(colnames(x.for.w), "(Intercept)")
+    
+    if (!all(name.wx %in% colnames(X))) 
+      warning("Some variables in WX do not appear in X. Check the formula if this is not intended.")
+    
+    WX           <- W %*% x.for.w[, name.wx, drop = FALSE]
     colnames(WX) <- paste0("lag_", name.wx)
-    if (any(is.na(WX))) stop("NAs in WX variable")
+    if (anyNA(WX)) stop("NAs in WX variable")
     X <- cbind(X, WX)
+  } else {
+    contrastsD <- NULL
   }
-  if (any(is.na(X))) stop("NAs in independent variables")
+  if (anyNA(X)) stop("NAs in independent variables")
   N  <- nrow(X)
   K  <- ncol(X)
   sn <- nrow(W)
@@ -140,26 +148,22 @@ sbinaryLGMM <- function(formula, data,
   ddfun <- switch(link,
                   "logit"  = function(x) (1 - 2 * pfun(x)) * pfun(x) * (1 - pfun(x)),
                   "probit" = function(x) -x * dnorm(x))  
-  ai   <- as.vector(crossprod(t(X), b_init))
+  ai   <- as.vector(X %*% b_init)
   q    <- 2*y - 1
-  #fa   <- dfun(q*ai)
   fa   <- pmax(dfun(q*ai), .Machine$double.eps)
   Fa   <- pmax(pfun(q*ai), .Machine$double.eps)
   ffa  <- ddfun(q*ai) 
   u0   <- q * (fa/Fa)
   grad <- -1 * as.vector(q^2 * ((ffa * Fa - fa^2) / (Fa^2))) # Common vector of the derivative
-  #grad  <- as.vector(u0 * (u0 + ai))
-  Gb    <- grad * X
-  Glam  <- grad * crossprod(t(W), ai)
-  #Grho  <- grad * (W %*% ai)
-  G     <- cbind(Gb, Glam)
+  Gb   <- grad * X
+  Glam <- grad * (W %*% ai)
+  G    <- cbind(Gb, Glam)
   
   # Second step
-  Ghat <- H %*% solve(crossprod(H)) %*% crossprod(H, G) #Predicted values of G
-  epsilon <- u0 + as.vector(crossprod(t(Gb), b_init))
-  #epsilon <- u0 + Gb %*% b_init
-  fit <- lm(epsilon ~ as.matrix(Ghat) + 0)
-  bhat <- coef(fit)
+  Ghat        <- H %*% solve(crossprod(H)) %*% crossprod(H, G) #Predicted values of G
+  epsilon     <- u0 + as.vector(Gb %*% b_init)
+  fit         <- lm(epsilon ~ as.matrix(Ghat) + 0)
+  bhat        <- coef(fit)
   names(bhat) <- c(colnames(X), "lambda") 
   
   ## Saving results
@@ -173,7 +177,12 @@ sbinaryLGMM <- function(formula, data,
       listw        = W,
       link         = link, 
       fit          = fit, 
-      formula     = f1
+      formula     = f1,
+      mf          = mf, 
+      data        = data,
+      contrastsX  = contrastsX,
+      contrastsD  = contrastsD,
+      Xlevels     = Xlevels
     ), 
     class = "binlgmm"
   )
@@ -279,5 +288,179 @@ print.summary.binlgmm <- function(x,
   
   cat(paste("\nSample size:", signif(nrow(x$X), digits)), "\n")
   invisible(x)
+}
+
+
+#' Predictions for Spatial Binary LGMM Models
+#'
+#' Computes predicted probabilities for spatial binary response models estimated via LGMM. 
+#' Supports both probit and logit links, accounts for spatial heteroskedasticity, and optionally 
+#' returns standard errors using the Delta method.
+#'
+#' @param object An object of class \code{binlgmm} returned by a spatial binary GMM estimation function.
+#' @param newdata An optional data frame in which to look for variables with which to predict. 
+#' If omitted, the original data used to fit the model is used.
+#' @param Sinv Optional user-supplied spatial multiplier matrix \eqn{S = (I - \lambda W)^{-1}}. 
+#' If \code{NULL}, it is computed using the spatial weight matrix.
+#' @param het Logical. If \code{TRUE}, assumes a heteroskedastic error structure with spatially varying variances.
+#' @param approximation Logical. If \code{TRUE}, uses power-series approximation to compute the inverse spatial matrix.
+#' @param pw Integer. Power-order to use when \code{approximation = TRUE}.
+#' @param ses Logical. If \code{TRUE}, standard errors of the predictions are computed using the Delta method.
+#' @param theta Optional parameter vector (including \code{lambda}) to use for prediction instead of the estimated one.
+#' @param ... Additional arguments (currently unused).
+#'
+#' @details
+#' The function computes predicted probabilities \eqn{\hat{p}_i = F(a_i)} where \eqn{a_i} is a spatially filtered linear index. 
+#' In the presence of heteroskedasticity (\code{het = TRUE}), the normalization involves the row-wise standard deviation 
+#' of the spatial multiplier. When \code{ses = TRUE}, standard errors are computed using the analytical Jacobian of the 
+#' prediction function with respect to the parameters and the estimated variance-covariance matrix.
+#'
+#' @return A numeric vector of predicted probabilities if \code{ses = FALSE}. If \code{ses = TRUE}, returns a matrix with:
+#' \describe{
+#'   \item{\code{p_hat}}{Predicted probabilities.}
+#'   \item{\code{Std. error}}{Standard errors of the predictions.}
+#'   \item{\code{z value}}{Z-statistics.}
+#'   \item{\code{Pr(> z)}}{Two-sided p-values.}
+#' }
+#'
+#' @seealso \code{\link{sbinaryLGMM}}, \code{\link{vcov.binlgmm}}
+#'
+#' @examples
+#' # Data set
+#' data(oldcol, package = "spdep")
+#' 
+#' # Create dependent (dummy) variable
+#' COL.OLD$CRIMED <- as.numeric(COL.OLD$CRIME > 35)
+#' 
+#' # Estimate the model
+#' lgmm <- sbinaryLGMM(CRIMED ~ INC + HOVAL | INC,
+#'                     link  = "probit",
+#'                     listw = spdep::nb2listw(COL.nb, style = "W"),
+#'                     nins  = 3,
+#'                     data  = COL.OLD)
+#' 
+#' # Predicted probabilities with SES
+#' out <- predict(lgmm, ses = TRUE)
+#' head(out, 5)
+#' 
+#' @author Mauricio Sarrias and Gianfranco Piras. 
+#' @keywords prediction
+#' @export 
+#' @method predict binlgmm
+predict.binlgmm <- function(object, 
+                           newdata, 
+                           Sinv = NULL,
+                           het  = TRUE,
+                           approximation = FALSE,
+                           pw  = 5,
+                           ses = FALSE,
+                           theta = NULL, ...){
+  
+  if (!inherits(object, "binlgmm")) warning("calling predict.bingmm(<fake-bingmm-object>) ...")
+  # Obtain data from formula
+  
+  # Extract formula and spatial weight matrix
+  f1     <- object$formula
+  Durbin <- (length(f1)[2L] == 2L)
+  W      <- object$listw
+  
+  # Generate model frame and matrices
+  if (missing(newdata) || is.null(newdata)){
+    mf <- model.frame(f1,  data = object$data)
+    X  <- model.matrix(f1, data = mf, rhs = 1)
+  } else {
+    # Generate model frame with new data
+    mf <- model.frame(f1, newdata, xlev = object$Xlevels)
+    X  <- model.matrix(f1, data = mf, rhs = 1, contrasts.arg = object$contrastsX)
+  }
+  if (Durbin){
+    x.for.w      <- model.matrix(f1, data = mf, rhs = 2, contrasts.arg = object$contrastsD)
+    name.wx      <- colnames(x.for.w)
+    WX           <- crossprod(t(W), x.for.w)
+    name.wx      <- name.wx[which(name.wx != "(Intercept)")]
+    WX           <- WX[ , name.wx, drop = FALSE] # Delete the constant from the WX
+    colnames(WX) <- paste0("lag_", name.wx)
+    if (any(is.na(WX))) stop("NAs in WX variable")
+    X <- cbind(X, WX)
+  }
+  
+  # Get parameters
+  n         <- nrow(X)
+  theta.hat <- if(is.null(theta)) coef(object) else theta
+  lambda    <- theta.hat["lambda"]
+  betas     <- theta.hat[which(names(theta.hat) != "lambda")]
+  
+  # Generate link
+  link <- object$link
+  pfun <- switch(link, "probit" = pnorm, "logit"  = plogis)
+  if (ses) dfun <- switch(link, "probit" = dnorm, "logit" = dlogis)
+  
+  
+  # Generate S matrix or use S provided by user
+  if (is.null(Sinv)) {
+    if (approximation) {
+      Sinv <- app_W(W, lambda, pw)
+    } else {
+      A    <- Matrix::Diagonal(n) - lambda * W
+      Sinv <- Matrix::solve(A)
+    }
+  }
+  
+  # Generate linear index
+  Xb  <- drop(X %*% betas)
+  Sxb <- drop(Sinv %*% Xb)
+  if (het){
+    rownorms  <- sqrt(Matrix::rowSums(Sinv ^ 2))
+    sigma_inv <- 1 / rownorms
+    a         <- sigma_inv * Sxb
+  } else {
+    a  <- Sxb
+  }
+  
+  # Predictions
+  pred <- pfun(a)
+  if (!ses) return(pred)
+  
+  # Standard errors via Delta method
+  dfa <- dfun(a)
+  
+  # Derivative w.r.t beta
+  if (het){
+    SinvX        <- as.matrix(Sinv %*% X)
+    SinvX_scaled <- SinvX * sigma_inv
+    der_beta     <- dfa * SinvX_scaled  
+  } else {
+    SinvX        <- as.matrix(Sinv %*% X)
+    der_beta     <- dfa * SinvX
+  }
+  
+  
+  # Derivative w.r.t lambda
+  if (het){
+    BW        <- Sinv %*% W
+    BBt       <- Matrix::tcrossprod(Sinv)
+    diag_term <- 2 * Matrix::rowSums(BW * BBt)
+    Drho      <- - 0.5 * sigma_inv^3 * diag_term
+    term1     <- Drho * Sxb
+    
+    term2           <- (Sinv %*% W %*% Sinv %*% Xb) * sigma_inv
+    der_lambda      <- dfa * (term1 + term2)
+  } else {
+    der_lambda      <- dfa * drop(Sinv %*% W %*% Sinv %*% Xb)
+  }
+  
+  
+  # Combine Jacobian
+  Jac        <- cbind(der_beta, der_lambda)
+  
+  # Compute VCOV and SE
+  V   <- vcov(object)
+  se  <- sqrt(rowSums((Jac %*% V) * Jac)) # Efficient diag(JVJ')
+  
+  # Return full prediction table
+  z    <- pred / se
+  pval <- 2 * pnorm(-abs(z))
+  
+  return(cbind(`p_hat` = pred, `Std. error` = se, `z value` = z, `Pr(> z)` = pval))
 }
 

@@ -17,27 +17,27 @@
 #'\eqn{u = \rho W u + \epsilon} such that \eqn{u = A_{\rho}^{-1}\epsilon}, and \eqn{\epsilon \sim N(0, I)}, 
 #'
 #' @name sbinaryRis
-#' @param formula a symbolic description of the model of the form \code{y ~ x | wx} where \code{y} is the binary dependent variable, \code{x} are the independent variables. The variables after \code{|} are those variables that enter spatially lagged: \eqn{WX}. The variables in the second part of \code{formula} must also appear in the first part. This rules out situations in which one of the regressors can be specified only in lagged form.
-#' @param data the data of class \code{data.frame}.
-#' @param subset an optional vector specifying a subset of observations to be used in the fitting process.
-#' @param na.action a function which indicates what should happen when the data contains \code{NA}s. 
-#' @param listw object. An object of class \code{listw}, \code{matrix}, or \code{Matrix}.  
-#' @param R numerical. The number of draws used in RIS (GHK) simulator. 
-#' @param model string. A string indicating which model to estimate. It can be \code{"SAR"} for the spatial autoregressive spatial model or \code{"SEM"} for the spatial error model. 
-#' @param varcov string. A string indicating over which variance-covariance matrix to apply the Chokesly factorization. 
-#' @param start if not \code{NULL}, the user must provide a vector of initial parameters for the optimization procedure. When \code{start = NULL}, \code{sbinaryRis} uses the traditional Probit estimates as initial values for the parameters, and the correlation between \eqn{y} and \eqn{Wy} as initial value for \eqn{\lambda} or \eqn{\rho}.
-#' @param approximation logical. If \code{TRUE} (the default) then \eqn{(I - \lambda W)^{-1}} or \eqn{(I - \rho W)^{-1}} is approximated as \eqn{I + \lambda W + \lambda^2 W^2 + \lambda^3 W^3 + ... +\lambda^q W^q}. If  \code{FALSE}, then the inverse is computed without approximations.
-#' @param pw numeric. The power used for the approximation \eqn{I + \lambda W + \lambda^2 W^2 + \lambda^3 W^3 + ... +\lambda^q W^q}. The default is 5.
-#' @param print.init logical. If \code{TRUE} the initial parameters used in the optimization of the first step are printed. 
-#' @param Qneg logical. Whether to construct the diagonal elements of \eqn{Q}. If \code{Qneg = FALSE}, then \eqn{q_{ii} = 2y_{i} - 1}. If  \code{Qneg = TRUE}, then \eqn{q_{ii} = 1- 2y_{i}}.
+#' @param formula A symbolic description of the model of the form \code{y ~ x | wx} where \code{y} is the binary dependent variable, \code{x} are the independent variables. The variables after \code{|} are those variables that enter spatially lagged: \eqn{WX}. 
+#' @param data A \code{data.frame} containing the variables in the model.
+#' @param subset An optional vector specifying a subset of observations to be used in the fitting process.
+#' @param na.action A function which indicates what should happen when the data contains \code{NA}s. 
+#' @param listw Object. An object of class \code{listw}, \code{matrix}, or \code{Matrix}.  
+#' @param R Integer. The number of draws used in RIS (GHK) simulator. 
+#' @param model String. A string indicating which model to estimate. It can be \code{"SAR"} for the spatial autoregressive spatial model or \code{"SEM"} for the spatial error model. 
+#' @param varcov String. A string indicating over which variance-covariance matrix to apply the Chokesly factorization. 
+#' @param start If not \code{NULL}, the user must provide a vector of initial parameters for the optimization procedure. When \code{start = NULL}, \code{sbinaryRis} uses the traditional Probit estimates as initial values for the parameters, and the correlation between \eqn{y} and \eqn{Wy} as initial value for \eqn{\lambda} or \eqn{\rho}.
+#' @param approximation Logical. If \code{TRUE} (the default) then \eqn{(I - \lambda W)^{-1}} or \eqn{(I - \rho W)^{-1}} is approximated as \eqn{I + \lambda W + \lambda^2 W^2 + \lambda^3 W^3 + ... +\lambda^q W^q}. If  \code{FALSE}, then the inverse is computed without approximations.
+#' @param pw Integer. The power used for the approximation \eqn{I + \lambda W + \lambda^2 W^2 + \lambda^3 W^3 + ... +\lambda^q W^q}. The default is 5.
+#' @param print.init Logical. If \code{TRUE} the initial parameters used in the optimization of the first step are printed. 
+#' @param Qneg Logical. Whether to construct the negative of the diagonal elements of \eqn{Q}. If \code{Qneg = FALSE}, then \eqn{q_{ii} = 2y_{i} - 1}. If  \code{Qneg = TRUE}, then \eqn{q_{ii} = 1- 2y_{i}}.
 #' @param ... additional arguments passed to \code{maxLik}.
-#' @param x,object,  an object of class \code{bingmm}.
-#' @param eigentol the standard errors are only calculated if the ratio of the smallest and largest eigenvalue of the Hessian matrix is less than \code{eigentol}.  Otherwise the Hessian is treated as singular. 
-#' @param digits the number of digits
+#' @param x,object,  An object of class \code{bingmm}.
+#' @param eigentol The standard errors are only calculated if the ratio of the smallest and largest eigenvalue of the Hessian matrix is less than \code{eigentol}.  Otherwise the Hessian is treated as singular. 
+#' @param digits The number of digits for \code{summary} methods.  
 #' @details 
 #' 
 #' The models are estimated by simulating the probabilities using the RIS-normal (GHK) simulator. The aim is to evaluate 
-#' the multivariate density function \eqn{P(\upsilon = Q u < s)}, where \eqn{Q} is a diagonal matrix with entries \eqn{q_{ii} = 2y_i - 1} and the \eqn{n\times 1} vector
+#' the multivariate density function \eqn{P(\upsilon = Q u < s)}, where \eqn{Q} is a diagonal matrix with entries \eqn{q_{ii} = 2y_i - 1}, and the \eqn{n\times 1} vector
 #' \eqn{s} depends on whether the model is SAR or SEM. If \code{model = "SAR"}, then \eqn{s = QA_{\lambda}^{-1}Z\delta} where \eqn{A_{\lambda} = (I - \lambda W)}; 
 #' if \code{model = "SEM"}, then \eqn{s = QZ\delta}. 
 #' 
@@ -81,7 +81,11 @@
 #' \item{listw}{the spatial weight matrix,}
 #' \item{formula}{the formula,}
 #' \item{R}{number of draws,}
-#' \item{mf}{model frame.}
+#' \item{mf}{model frame,}
+#' \item{data}{the data, }
+#' \item{contrastsX}{the contrasts used in the first part of the formula,}
+#' \item{contrastsD}{the contrasts used in the second part of the formula,}
+#' \item{Xlevels}{a record of the levels of the factors used in fitting.}
 #' @examples
 #' \donttest{
 # Data set
@@ -191,24 +195,30 @@ sbinaryRis <- function(formula, data, subset, na.action,
   # 5. Obtain variables ----
   # ============================-
   y  <- model.response(mf)
-  if (any(is.na(y))) stop("NAs in dependent variable")
+  if (anyNA(y)) stop("NAs in dependent variable")
   if (!all(y %in% c(0, 1, TRUE, FALSE))) stop("All dependent variables must be either 0, 1, TRUE or FALSE")
   if (!is.numeric(y)) y <- as.numeric(y)
   X  <- model.matrix(f1, data = mf, rhs = 1)
+  # Added for prediction
+  contrastsX <- attr(X, "contrasts")
+  Xlevels    <- .getXlevels(attr(mf, "terms"), mf)
+  
   if (Durbin){
-    x.for.w  <- model.matrix(f1, data = mf, rhs = 2)
-    name.wx  <- colnames(x.for.w)
-    ## Check variables are in the first part of formula
-    check.wx <- !(name.wx %in% colnames(X))
-    if (sum(check.wx) > 0) stop("Some variables in WX do not appear in X. Check the formula")
-    WX           <- crossprod(t(W), x.for.w)
-    name.wx      <- name.wx[which(name.wx != "(Intercept)")]
-    WX           <- WX[, name.wx, drop = FALSE] # Delete the constant from the WX
+    x.for.w    <- model.matrix(f1, data = mf, rhs = 2)
+    contrastsD <- attr(x.for.w, "contrasts")
+    name.wx    <- setdiff(colnames(x.for.w), "(Intercept)")
+    
+    if (!all(name.wx %in% colnames(X))) 
+      warning("Some variables in WX do not appear in X. Check the formula if this is not intended.")
+    
+    WX           <- W %*% x.for.w[, name.wx, drop = FALSE]
     colnames(WX) <- paste0("lag_", name.wx)
-    if (any(is.na(WX))) stop("NAs in WX variable")
+    if (anyNA(WX)) stop("NAs in WX variable")
     X <- cbind(X, WX)
+  } else {
+    contrastsD <- NULL
   }
-  if (any(is.na(X))) stop("NAs in independent variables")
+  if (anyNA(X)) stop("NAs in independent variables")
   N  <- nrow(X)
   K  <- ncol(X)
   sn <- nrow(W)
@@ -274,6 +284,11 @@ sbinaryRis <- function(formula, data, subset, na.action,
   out$formula       <- f1
   out$R             <- R
   out$mf            <- mf
+  out$data          <- data
+  out$contrastsX    <- contrastsX
+  out$contrastsD    <- contrastsD
+  out$Xlevels       <- Xlevels
+  out$link          <- "probit"
   class(out)        <- c("binris", class(out))        
   return(out)
 }
@@ -421,6 +436,176 @@ print.summary.binris <- function(x, digits = max(3, getOption("digits") - 2),
 }
 
 
+
+#' Predictions for Spatial Binary RIS Models
+#'
+#' Computes predicted probabilities for spatial binary response models estimated via RIS. 
+#' Supports probit models and  accounts for spatial heteroskedasticity, and optionally 
+#' returns standard errors using the Delta method.
+#'
+#' @param object An object of class \code{binris}.
+#' @param newdata An optional data frame in which to look for variables with which to predict. 
+#' If omitted, the original data used to fit the model is used.
+#' @param Sinv Optional user-supplied spatial multiplier matrix \eqn{S = (I - \lambda W)^{-1}}. 
+#' If \code{NULL}, it is computed using the spatial weight matrix.
+#' @param het Logical. If \code{TRUE}, assumes a heteroskedastic error structure with spatially varying variances.
+#' @param approximation Logical. If \code{TRUE}, uses power-series approximation to compute the inverse spatial matrix.
+#' @param pw Integer. Power-order to use when \code{approximation = TRUE}.
+#' @param ses Logical. If \code{TRUE}, standard errors of the predictions are computed using the Delta method.
+#' @param theta Optional parameter vector (including \code{lambda}) to use for prediction instead of the estimated one.
+#' @param ... Additional arguments (currently unused).
+#'
+#' @details
+#' The function computes predicted probabilities \eqn{\hat{p}_i = F(a_i)} where \eqn{a_i} is a spatially filtered linear index. 
+#' In the presence of heteroskedasticity (\code{het = TRUE}), the normalization involves the row-wise standard deviation 
+#' of the spatial multiplier. When \code{ses = TRUE}, standard errors are computed using the analytical Jacobian of the 
+#' prediction function with respect to the parameters and the estimated variance-covariance matrix.
+#'
+#' @return A numeric vector of predicted probabilities if \code{ses = FALSE}. If \code{ses = TRUE}, returns a matrix with:
+#' \describe{
+#'   \item{\code{p_hat}}{Predicted probabilities.}
+#'   \item{\code{Std. error}}{Standard errors of the predictions.}
+#'   \item{\code{z value}}{Z-statistics.}
+#'   \item{\code{Pr(> z)}}{Two-sided p-values.}
+#' }
+#'
+#' @seealso \code{\link{sbinaryRis}}
+#'
+#' @examples
+#' data(oldcol, package = "spdep")
+#' # Create dependent (dummy) variable
+#' COL.OLD$CRIMED <- as.numeric(COL.OLD$CRIME > 35)
+#' 
+#' # Estimate the model
+#' ris_sar <- sbinaryRis(CRIMED ~ INC + HOVAL, data = COL.OLD,
+#'                       R = 50,
+#'                       listw = spdep::nb2listw(COL.nb, style = "W"))
+#'                       
+#' # Predicted probabilities with SES
+#' out <- predict(ris_sar, ses = TRUE)
+#' head(out, 5)
+#' 
+#' @author Mauricio Sarrias and Gianfranco Piras. 
+#' @keywords prediction
+#' @export 
+#' @method predict binris
+predict.binris <- function(object, 
+                           newdata, 
+                           Sinv = NULL,
+                           het  = TRUE,
+                           approximation = FALSE,
+                           pw  = 5,
+                           ses = FALSE,
+                           theta = NULL, ...){
+  
+  if (!inherits(object, "binris")) warning("calling predict.bingmm(<fake-bingmm-object>) ...")
+  # Obtain data from formula
+  
+  # Extract formula and spatial weight matrix
+  f1     <- object$formula
+  Durbin <- (length(f1)[2L] == 2L)
+  W      <- object$listw
+  
+  # Generate model frame and matrices
+  if (missing(newdata) || is.null(newdata)){
+    mf <- model.frame(f1,  data = object$data)
+    X  <- model.matrix(f1, data = mf, rhs = 1)
+  } else {
+    # Generate model frame with new data
+    mf <- model.frame(f1, newdata, xlev = object$Xlevels)
+    X  <- model.matrix(f1, data = mf, rhs = 1, contrasts.arg = object$contrastsX)
+  }
+  if (Durbin){
+    x.for.w      <- model.matrix(f1, data = mf, rhs = 2, contrasts.arg = object$contrastsD)
+    name.wx      <- colnames(x.for.w)
+    WX           <- crossprod(t(W), x.for.w)
+    name.wx      <- name.wx[which(name.wx != "(Intercept)")]
+    WX           <- WX[ , name.wx, drop = FALSE] # Delete the constant from the WX
+    colnames(WX) <- paste0("lag_", name.wx)
+    if (any(is.na(WX))) stop("NAs in WX variable")
+    X <- cbind(X, WX)
+  }
+  
+  # Get parameters
+  n         <- nrow(X)
+  theta.hat <- if(is.null(theta)) coef(object) else theta
+  lambda    <- theta.hat["lambda"]
+  betas     <- theta.hat[which(names(theta.hat) != "lambda")]
+  
+  # Generate link
+  pfun <- pnorm
+  if (ses) dfun <- dnorm
+  
+  
+  # Generate S matrix or use S provided by user
+  if (is.null(Sinv)) {
+    if (approximation) {
+      Sinv <- app_W(W, lambda, pw)
+    } else {
+      A    <- Matrix::Diagonal(n) - lambda * W
+      Sinv <- Matrix::solve(A)
+    }
+  }
+  
+  # Generate linear index
+  Xb  <- drop(X %*% betas)
+  Sxb <- drop(Sinv %*% Xb)
+  if (het){
+    rownorms  <- sqrt(Matrix::rowSums(Sinv ^ 2))
+    sigma_inv <- 1 / rownorms
+    a         <- sigma_inv * Sxb
+  } else {
+    a  <- Sxb
+  }
+  
+  # Predictions
+  pred <- pfun(a)
+  if (!ses) return(pred)
+  
+  # Standard errors via Delta method
+  dfa <- dfun(a)
+  
+  # Derivative w.r.t beta
+  if (het){
+    SinvX        <- as.matrix(Sinv %*% X)
+    SinvX_scaled <- SinvX * sigma_inv
+    der_beta     <- dfa * SinvX_scaled  
+  } else {
+    SinvX        <- as.matrix(Sinv %*% X)
+    der_beta     <- dfa * SinvX
+  }
+  
+  
+  # Derivative w.r.t lambda
+  if (het){
+    BW        <- Sinv %*% W
+    BBt       <- Matrix::tcrossprod(Sinv)
+    diag_term <- 2 * Matrix::rowSums(BW * BBt)
+    Drho      <- - 0.5 * sigma_inv^3 * diag_term
+    term1     <- Drho * Sxb
+    
+    term2           <- (Sinv %*% W %*% Sinv %*% Xb) * sigma_inv
+    der_lambda      <- dfa * (term1 + term2)
+  } else {
+    der_lambda      <- dfa * drop(Sinv %*% W %*% Sinv %*% Xb)
+  }
+  
+  
+  # Combine Jacobian
+  Jac        <- cbind(der_beta, der_lambda)
+  
+  # Compute VCOV and SE
+  V   <- vcov(object)
+  se  <- sqrt(rowSums((Jac %*% V) * Jac)) # Efficient diag(JVJ')
+  
+  # Return full prediction table
+  z    <- pred / se
+  pval <- 2 * pnorm(-abs(z))
+  
+  return(cbind(`p_hat` = pred, `Std. error` = se, `z value` = z, `Pr(> z)` = pval))
+}
+
+
 #' Get Model Summaries for use with "mtable" for objects of class binris
 #' 
 #' A generic function to collect coefficients and summary statistics from a \code{binris} object. It is used in \code{mtable}
@@ -457,9 +642,9 @@ getSummary.binris <- function(obj, alpha = 0.05, ...){
 ghk_l <- function(s, Sigma, R){
   #R:number of simulations
   n   <- ncol(Sigma)
-  eta <- matrix(NA, nrow = n, ncol = R)
-  p   <- matrix(NA, nrow = n, ncol = R)
-  C   <- t(chol(Sigma))
+  eta <- matrix(NA_real_, nrow = n, ncol = R)
+  p   <- matrix(NA_real_, nrow = n, ncol = R)
+  C   <- t(chol(Sigma)) # Lower triangular
   # First observation
   nu_1     <-  s[1] / C[1, 1]
   zeta_1   <- m.draws(R)
@@ -478,11 +663,11 @@ ghk_l <- function(s, Sigma, R){
 ghk_u <- function(s, Sigma, R){
   #R:number of simulations
   n        <- ncol(Sigma)
-  eta      <- matrix(NA, nrow = n, ncol = R)
-  p        <- matrix(NA, nrow = n, ncol = R)
+  eta      <- matrix(NA_real_, nrow = n, ncol = R)
+  p        <- matrix(NA_real_, nrow = n, ncol = R)
   C        <- chol(Sigma) #Upper triangular 
   #B        <- solve(C)
-  B        <- backsolve(C, diag(ncol(C)), upper.tri =  TRUE)
+  B        <- backsolve(C, diag(ncol(C)), upper.tri =  TRUE) # B = inv(C)
   # Last observation
   nu_n     <-  s[n] / B[n, n]
   zeta_n   <- m.draws(R)
@@ -530,24 +715,32 @@ lls_sem <- function(theta, y, X, W, R,
   N        <- nrow(X)
   beta     <- theta[1:K]
   rho      <- theta[K + 1]
-  I        <- sparseMatrix(i = 1:N, j = 1:N, x = 1)
-  A        <- I - rho * W
-  Xb       <- crossprod(t(X), beta)
+  A        <- Matrix::Diagonal(N) - rho * W
+  Xb       <- X %*% beta
   if (Qneg){
-    Q      <- sparseMatrix(i = 1:N, j = 1:N, x = as.vector(1 - 2*y))
-    s      <- - crossprod(t(Q), Xb)
+    #Q      <- sparseMatrix(i = 1:N, j = 1:N, x = as.vector(1 - 2*y))
+    #s      <- - crossprod(t(Q), Xb)
+    Q_diag  <- 1 - 2 * y
+    s       <- - Q_diag * Xb 
   } else {
-    Q      <- sparseMatrix(i = 1:N, j = 1:N, x = as.vector(2*y - 1))
-    s      <- crossprod(t(Q), Xb)
+    #Q      <- sparseMatrix(i = 1:N, j = 1:N, x = as.vector(2*y - 1))
+    #s      <- crossprod(t(Q), Xb)
+    Q_diag  <- 2 * y - 1
+    s       <- Q_diag * Xb 
   }
   if (varcov == "sigma"){
     A_i      <- if(approximation) app_W(W, rho, pw) else solve(A)
     Sigma_u  <- tcrossprod(A_i)
-    Sigma_v  <- crossprod(t(Q), tcrossprod(Sigma_u, Q))
+    Q_mat    <- Matrix::Diagonal(x = Q_diag)
+    #Sigma_v  <- crossprod(t(Q), tcrossprod(Sigma_u, Q))
+    Sigma_v  <- Q_mat %*% Sigma_u %*% Q_mat
     pir      <- ghk_l(s = s, Sigma = Sigma_v, R = R)
   } else {
-    Q_i       <- sparseMatrix(i = 1:N, j = 1:N, x =  1 / diag(Q))
-    Sigma_vi  <- tcrossprod(crossprod(Q_i, tcrossprod(A)), t(Q_i))
+    A_tA      <- tcrossprod(A)
+    #Q_i       <- sparseMatrix(i = 1:N, j = 1:N, x =  1 / diag(Q))
+    Q_i       <- Matrix::Diagonal(x = 1 / Q_diag)
+    #Sigma_vi  <- tcrossprod(crossprod(Q_i, tcrossprod(A)), t(Q_i))
+    Sigma_vi   <- Q_i %*% A_tA %*% Q_i
     pir       <- ghk_u(s = s, Sigma = Sigma_vi, R = R)
   }
   pi_s     <- apply(pmax(pir, .Machine$double.eps), 1, mean)
@@ -566,26 +759,41 @@ lls_sar <- function(theta, y, X, W, R,
   N        <- nrow(X)
   beta     <- theta[1:K]
   lambda   <- theta[K + 1]
-  I        <- sparseMatrix(i = 1:N, j = 1:N, x = 1)
-  A        <- I - lambda * W
-  Xb       <- crossprod(t(X), beta)
+  
+  #I        <- sparseMatrix(i = 1:N, j = 1:N, x = 1)
+  A        <- Matrix::Diagonal(N) - lambda * W
+  Xb       <- as.vector(X %*% beta)
   A_i      <- if(approximation) app_W(W, lambda, pw) else solve(A)
-  if (Qneg){
-    Q      <- sparseMatrix(i = 1:N, j = 1:N, x = as.vector(1 - 2*y))
-    QA_i   <- crossprod(t(Q), A_i)
-    s      <- - crossprod(t(QA_i), Xb)
-  } else {
-    Q      <- sparseMatrix(i = 1:N, j = 1:N, x = as.vector(2*y - 1))
-    QA_i   <- crossprod(t(Q), A_i)
-    s      <- crossprod(t(QA_i), Xb)
-  }
+  # if (Qneg){
+  #   Q      <- sparseMatrix(i = 1:N, j = 1:N, x = as.vector(1 - 2*y))
+  #   QA_i   <- crossprod(t(Q), A_i)
+  #   s      <- - crossprod(t(QA_i), Xb)
+  # } else {
+  #   Q      <- sparseMatrix(i = 1:N, j = 1:N, x = as.vector(2*y - 1))
+  #   QA_i   <- crossprod(t(Q), A_i)
+  #   s      <- crossprod(t(QA_i), Xb)
+  # }
+  
+  # Compute Q_diag and s efficiently
+  Q_diag <- if (Qneg) 1 - 2 * y else 2 * y - 1
+  QA_i   <- Q_diag * A_i        # row-wise scaling of A_i
+  s      <- if (Qneg) - QA_i %*% Xb else QA_i %*% Xb
+  s      <- as.vector(s)        # ensure s is a numeric vector
+  
   if (varcov == "sigma"){
     Sigma_u  <- tcrossprod(A_i)
-    Sigma_v  <- crossprod(t(Q), tcrossprod(Sigma_u, Q))
+    #Sigma_v  <- crossprod(t(Q), tcrossprod(Sigma_u, Q))
+    #Sigma_v <- Q_diag * (Sigma_u %*% Q_diag)  # Equivalent to Q %*% Sigma_u %*% Q
+    Q_mat    <- Matrix::Diagonal(x = Q_diag)
+    #Sigma_v  <- crossprod(t(Q), tcrossprod(Sigma_u, Q))
+    Sigma_v  <- Q_mat %*% Sigma_u %*% Q_mat
     pir      <- ghk_l(s = s, Sigma = Sigma_v, R = R)
   } else {
-    Q_i       <- sparseMatrix(i = 1:N, j = 1:N, x =  1 / diag(Q))
-    Sigma_vi  <- tcrossprod(crossprod(Q_i, tcrossprod(A)), t(Q_i))
+    #Q_i       <- sparseMatrix(i = 1:N, j = 1:N, x =  1 / diag(Q))
+    #Sigma_vi  <- tcrossprod(crossprod(Q_i, tcrossprod(A)), t(Q_i))
+    A_tA      <- A %*% t(A)
+    Q_inv     <- Diagonal(x = 1 / Q_diag)
+    Sigma_vi  <- Q_inv %*% A_tA %*% Q_inv
     pir       <- ghk_u(s = s, Sigma = Sigma_vi, R = R)
   }
   pi_s     <- apply(pmax(pir, .Machine$double.eps), 1, mean)
